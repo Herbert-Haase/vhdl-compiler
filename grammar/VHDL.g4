@@ -5,7 +5,7 @@ design_file
     ;
 
 entity_declaration
-    : ENTITY IDENTIFIER IS END ENTITY? IDENTIFIER? SEMI
+    : ENTITY startName=IDENTIFIER IS END ENTITY? endName=IDENTIFIER? SEMI
     ;
 
 ENTITY: 'entity';

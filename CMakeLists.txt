@@ -73,3 +73,8 @@ add_test(
     NAME parse_minimal_entity
     COMMAND vhdl_compiler "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/minimal_entity.vhd"
 )
+add_test(
+    NAME reject_mismatched_entity_name
+    COMMAND vhdl_compiler "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/mismatched_entity.vhd"
+)
+set_tests_properties(reject_mismatched_entity_name PROPERTIES WILL_FAIL TRUE)

@@ -18,7 +18,7 @@ cmake --build build
 ## Run
 
 ```bash
-./build/vhdl_compiler /absolute/path/to/file.vhd
+./build/vhdl_compiler <path/to/file.vhd>
 ```
 
 ## Test
