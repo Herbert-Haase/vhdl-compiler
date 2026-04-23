@@ -8,7 +8,7 @@ GENERATED_DIR="${BUILD_DIR}/generated"
 RUNTIME_DIR="${BUILD_DIR}/antlr4-runtime"
 ANTLR4_JAR="${BUILD_DIR}/antlr-${ANTLR4_VERSION}-complete.jar"
 ANTLR4_JAR_URL="https://repo1.maven.org/maven2/org/antlr/antlr4/${ANTLR4_VERSION}/antlr4-${ANTLR4_VERSION}-complete.jar"
-GRAMMAR_FILE="${SCRIPT_DIR}/grammar/VHDLLexer.g4"
+GRAMMAR_FILE="${SCRIPT_DIR}/grammar/VHDL.g4"
 RUNTIME_LIB="${RUNTIME_DIR}/lib/libantlr4-runtime.a"
 OUT="${BUILD_DIR}/vhdl_lexer"
 
@@ -69,8 +69,7 @@ g++ -std=c++17 -O2 \
     "${GENERATED_LEXER}" \
     -I"${GENERATED_DIR}" \
     -I"${RUNTIME_INCLUDE}" \
-    -L"${RUNTIME_DIR}/lib" \
-    -lantlr4-runtime \
+    "${RUNTIME_DIR}/lib/libantlr4-runtime.a" \
     || die "Compilation failed"
 
 echo ">> Built: ${OUT}"
