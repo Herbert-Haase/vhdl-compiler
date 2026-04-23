@@ -8,9 +8,13 @@ GENERATED_DIR="${BUILD_DIR}/generated"
 RUNTIME_DIR="${BUILD_DIR}/antlr4-runtime"
 ANTLR4_JAR="${BUILD_DIR}/antlr-${ANTLR4_VERSION}-complete.jar"
 ANTLR4_JAR_URL="https://repo1.maven.org/maven2/org/antlr/antlr4/${ANTLR4_VERSION}/antlr4-${ANTLR4_VERSION}-complete.jar"
-GRAMMAR_FILE="${SCRIPT_DIR}/grammar/VHDL.g4"
+
+GRAMMAR_FILE="${SCRIPT_DIR}/grammar/VHDLLexer.g4"
+PARSER_GRAMMAR_FILE="${SCRIPT_DIR}/grammar/VHDLParser.g4"
 RUNTIME_LIB="${RUNTIME_DIR}/lib/libantlr4-runtime.a"
-OUT="${BUILD_DIR}/vhdl_lexer"
+OUT="${BUILD_DIR}/vhdl_parser"
+GENERATED_LEXER="${GENERATED_DIR}/VHDLLexer.cpp"
+GENERATED_PARSER="${GENERATED_DIR}/VHDLParser.cpp"
 
 die() { echo "error: $*" >&2; exit 1; }
 need() { command -v "$1" &>/dev/null || die "'$1' not found in PATH"; }
@@ -47,26 +51,29 @@ RUNTIME_INCLUDE="${RUNTIME_DIR}/include/antlr4-runtime"
 [[ ! -d "${RUNTIME_INCLUDE}" ]] && \
     RUNTIME_INCLUDE="${BUILD_DIR}/antlr4-src/runtime/Cpp/runtime/src"
 
-# Generate lexer only
-GENERATED_LEXER="${GENERATED_DIR}/VHDLLexer.cpp"
+# Generate lexer and parser
 
-if [[ ! -f "${GENERATED_LEXER}" || "${GRAMMAR_FILE}" -nt "${GENERATED_LEXER}" ]]; then
+if [[ ! -f "${GENERATED_LEXER}" || ! -f "${GENERATED_PARSER}" \
+   || "${GRAMMAR_FILE}" -nt "${GENERATED_LEXER}" \
+   || "${PARSER_GRAMMAR_FILE}" -nt "${GENERATED_PARSER}" ]]; then
     echo ">> Generating lexer from ${GRAMMAR_FILE}..."
     java -jar "${ANTLR4_JAR}" \
-        -Dlanguage=Cpp \
-        -no-listener \
-        -no-visitor \
-        -o "${GENERATED_DIR}" \
-        "${GRAMMAR_FILE}" \
-        || die "ANTLR4 lexer generation failed"
+    -Dlanguage=Cpp \
+    -no-listener \
+    -no-visitor \
+    -o "${GENERATED_DIR}" \
+    "${GRAMMAR_FILE}" \
+    "${PARSER_GRAMMAR_FILE}" \
+    || die "ANTLR4 lexer generation failed"
 fi
 
 # Compile
 echo ">> Compiling vhdl_lexer..."
-g++ -std=c++17 -O2 \
+    g++ -std=c++17 -O2 \
     -o "${OUT}" \
     "${SCRIPT_DIR}/src/main.cpp" \
     "${GENERATED_LEXER}" \
+    "${GENERATED_PARSER}" \
     -I"${GENERATED_DIR}" \
     -I"${RUNTIME_INCLUDE}" \
     "${RUNTIME_DIR}/lib/libantlr4-runtime.a" \
