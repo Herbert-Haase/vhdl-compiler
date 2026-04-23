@@ -12,7 +12,7 @@ Minimal ANTLRv4 + C++ compiler project structure using CMake.
 ## Build
 
 ```bash
-./build.sh
+./compile.sh
 ```
 
 ## Run
