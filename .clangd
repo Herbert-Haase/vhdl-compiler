@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: [-Ibuild/generated, -Ibuild/antlr4-runtime/include/antlr4-runtime]
