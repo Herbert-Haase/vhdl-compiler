@@ -14,6 +14,7 @@ struct LibDecl : ASTNode {
 
 struct UseDecl : ASTNode {
   std::string name;
+  bool imports_all;
 };
 
 struct PortDecl : ASTNode {

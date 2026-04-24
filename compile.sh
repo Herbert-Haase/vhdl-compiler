@@ -59,7 +59,7 @@ if [[ ! -f "${GENERATED_LEXER}" || ! -f "${GENERATED_PARSER}" \
     echo ">> Generating lexer from ${GRAMMAR_FILE}..."
     java -jar "${ANTLR4_JAR}" \
     -Dlanguage=Cpp \
-    -no-listener \
+    -listener \
     -no-visitor \
     -o "${GENERATED_DIR}" \
     "${GRAMMAR_FILE}" \

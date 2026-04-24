@@ -1,15 +1,18 @@
 // ASTBuilder.hpp
 #pragma once
+#include "VHDLLexer.h"
+#include "VHDLParser.h"
+#include "antlr4-runtime.h"
+
 #include "VHDLParserBaseListener.h"
 #include "ast.hpp"
-#include <memory>
 #include <stack>
 
 class ASTBuilder : public VHDLParserBaseListener {
 public:
   std::unique_ptr<ASTNode> root;
 
-private:
+  // private:
   std::stack<ASTNode *> stack;
 
   // entry point

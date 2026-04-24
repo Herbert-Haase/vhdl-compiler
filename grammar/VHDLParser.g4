@@ -17,11 +17,7 @@ entity_unit
   : ENTITY ID IS port_obj? END (ID)? SEMI;
 
 port_obj
-  : PORT LPAREN port_list RPAREN SEMI;
-
-port_list
-  : in_out_signal+
-  ;
+  : PORT LPAREN in_out_signal+ RPAREN SEMI;
 
 in_out_signal
   : ID (COMMA ID)* COLON (IN | OUT) STD_LOGIC SEMI?
