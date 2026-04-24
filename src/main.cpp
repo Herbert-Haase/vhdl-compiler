@@ -7,6 +7,9 @@
 #include "VHDLLexer.h"
 #include "VHDLParser.h"
 
+#include "ASTBuilder.hpp"
+#include "ast.hpp"
+
 // Force all ANTLR diagnostics to stderr
 class StderrErrorListener : public antlr4::BaseErrorListener {
 public:
@@ -74,11 +77,14 @@ int main(int argc, char** argv) {
     if (parser.getNumberOfSyntaxErrors() > 0)
         return 1;
 
-    std::cout << "digraph ParseTree {\n";
-    std::cout << "  node [shape=box];\n";
-    int nodeId = 0;
-    printDotTree(tree, parser, nodeId);
-    std::cout << "}\n";
+    ASTBuilder builder;
+    antlr4::tree::ParseTreeWalker::DEFAULT.walk(&builder, tree);
+    printASTDot(builder.root.get());
+    // std::cout << "digraph ParseTree {\n";
+    // std::cout << "  node [shape=box];\n";
+    // int nodeId = 0;
+    // printDotTree(tree, parser, nodeId);
+    // std::cout << "}\n";
 
     return 0;
 }
