@@ -38,7 +38,7 @@ void ASTBuilder::exitUse_declaration(VHDLParser::Use_declarationContext *ctx) {
   static_cast<StartRule *>(stack.top())->uses.push_back(std::move(node));
 }
 
-void ASTBuilder::enterEntity_unit(VHDLParser::Entity_unitContext *ctx) {
+void ASTBuilder::enterEntity_unit(VHDLParser::Entity_unitContext *) {
   stack.push(new Entity());
 }
 
@@ -66,6 +66,7 @@ void ASTBuilder::exitIn_out_signal(VHDLParser::In_out_signalContext *ctx) {
     node->names.push_back(id->getText());
   }
   node->type = ctx->STD_LOGIC()->getText();
+  node->in = ctx->IN() != nullptr;
   static_cast<Port *>(stack.top())->signals.push_back(std::move(node));
 }
 
@@ -111,10 +112,11 @@ void ASTBuilder::exitNotExpr(VHDLParser::NotExprContext *ctx) {
 void ASTBuilder::exitAndExpr(VHDLParser::AndExprContext *ctx) {
   if (!ctx->AND().empty()) {
     auto node = std::make_unique<AndExpr>();
-    for (auto *op : ctx->notExpr()) {
+    for (size_t i = 0; i < ctx->notExpr().size(); i++) {
       node->operands.push_back(std::move(expr_stack.top()));
       expr_stack.pop();
     }
+    std::reverse(node->operands.begin(), node->operands.end());
     expr_stack.push(std::move(node));
   }
 }
@@ -126,6 +128,7 @@ void ASTBuilder::exitOrExpr(VHDLParser::OrExprContext *ctx) {
       node->operands.push_back(std::move(expr_stack.top()));
       expr_stack.pop();
     }
+    std::reverse(node->operands.begin(), node->operands.end());
     expr_stack.push(std::move(node));
   }
 }

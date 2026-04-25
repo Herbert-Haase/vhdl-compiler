@@ -2,6 +2,9 @@
 #include <iostream>
 #include <string>
 #include <regex>
+#include <vector>
+#include <memory>
+#include <sstream>
 
 #include "antlr4-runtime.h"
 #include "VHDLLexer.h"
@@ -10,68 +13,98 @@
 #include "ASTBuilder.hpp"
 #include "ast.hpp"
 
-#include <iostream>
-#include <vector>
-#include <memory>
+// Helper to join vector of strings (for PortDecl and Signal names)
+std::string joinNames(const std::vector<std::string>& names) {
+    std::ostringstream oss;
+    for (size_t i = 0; i < names.size(); ++i) {
+        oss << names[i] << (i == names.size() - 1 ? "" : ", ");
+    }
+    return oss.str();
+}
+
+// Recursive helper for the ExprNode hierarchy
+void printExprDot(ExprNode* expr, int& nodeId, int parentId) {
+    if (!expr) return;
+    int currentId = nodeId++;
+    std::string label;
+
+    if (auto* id = dynamic_cast<IdExpr*>(expr)) {
+        label = "ID: " + id->name;
+    } else if (auto* n = dynamic_cast<NotExpr*>(expr)) {
+        label = "NOT";
+        printExprDot(n->operand.get(), nodeId, currentId);
+    } else if (auto* a = dynamic_cast<AndExpr*>(expr)) {
+        label = "AND";
+        for (auto& op : a->operands) printExprDot(op.get(), nodeId, currentId);
+    } else if (auto* o = dynamic_cast<OrExpr*>(expr)) {
+        label = "OR";
+        for (auto& op : o->operands) printExprDot(op.get(), nodeId, currentId);
+    }
+
+    std::cout << "  n" << currentId << " [label=\"" << label << "\", shape=ellipse, style=dashed];\n";
+    std::cout << "  n" << parentId << " -> n" << currentId << ";\n";
+}
 
 void printASTDot(ASTNode* node, int& nodeId, int parentId = -1) {
     if (!node) return;
-
     int currentId = nodeId++;
     std::string label;
     std::string color = "white";
 
-    // 1. Determine Label and Color based on Node Type
     if (auto* start = dynamic_cast<StartRule*>(node)) {
         label = "StartRule";
         color = "lightblue";
         std::cout << "  n" << currentId << " [label=\"" << label << "\", fillcolor=\"" << color << "\", style=filled];\n";
-        if (parentId != -1) std::cout << "  n" << parentId << " -> n" << currentId << ";\n";
-
-        // Traverse vectors
         for (auto& lib : start->libs) printASTDot(lib.get(), nodeId, currentId);
         for (auto& use : start->uses) printASTDot(use.get(), nodeId, currentId);
         for (auto& ent : start->entities) printASTDot(ent.get(), nodeId, currentId);
         for (auto& arch : start->arches) printASTDot(arch.get(), nodeId, currentId);
-        return; // Children handled manually
-    } 
-    else if (auto* lib = dynamic_cast<LibDecl*>(node)) {
-        label = "Lib: " + lib->name;
-        color = "lightyellow";
-    } 
-    else if (auto* use = dynamic_cast<UseDecl*>(node)) {
-        label = "Use: " + use->name + (use->imports_all ? " (ALL)" : "");
-        color = "lightgrey";
+        return;
     } 
     else if (auto* ent = dynamic_cast<Entity*>(node)) {
         label = "Entity: " + ent->name;
         color = "lightgreen";
+        if (ent->port) printASTDot(ent->port.get(), nodeId, currentId);
+    } 
+    else if (auto* port = dynamic_cast<Port*>(node)) {
+        label = "PORT";
+        for (auto& sig : port->signals) printASTDot(sig.get(), nodeId, currentId);
+    } 
+    else if (auto* pd = dynamic_cast<PortDecl*>(node)) {
+        label = (pd->in ? "[IN] " : "[OUT] ") + joinNames(pd->names) + " : " + pd->type;
+        color = "lightyellow";
+    }
+    else if (auto* arch = dynamic_cast<Arch*>(node)) {
+        label = "Arch: " + arch->name + " of " + arch->entity;
+        color = "bisque";
         std::cout << "  n" << currentId << " [label=\"" << label << "\", fillcolor=\"" << color << "\", style=filled];\n";
         if (parentId != -1) std::cout << "  n" << parentId << " -> n" << currentId << ";\n";
-        
-        // Entity children
-        if (ent->port) printASTDot(ent->port.get(), nodeId, currentId);
+        for (auto& sig : arch->signals) printASTDot(sig.get(), nodeId, currentId);
+        for (auto& stmt : arch->statements) printASTDot(stmt.get(), nodeId, currentId);
         return;
     }
-    else if (auto* p = dynamic_cast<Port*>(node)) {
-        label = "Port List";
-        std::cout << "  n" << currentId << " [label=\"" << label << "\"];\n";
+    else if (auto* sig = dynamic_cast<Signal*>(node)) {
+        label = "Signal: " + joinNames(sig->names) + " : " + sig->type;
+        color = "lightcyan";
+    }
+    else if (auto* stmt = dynamic_cast<Statement*>(node)) {
+        label = "Assign: " + stmt->varName;
+        color = "lavender";
+        std::cout << "  n" << currentId << " [label=\"" << label << "\", fillcolor=\"" << color << "\", style=filled];\n";
         if (parentId != -1) std::cout << "  n" << parentId << " -> n" << currentId << ";\n";
-        
-        for (const auto& sig : p->signals) {
-            int sigId = nodeId++;
-            std::string sigLabel = (sig.in ? "[IN] " : "[OUT] ") + sig.name + " : " + sig.type;
-            std::cout << "  n" << sigId << " [label=\"" << sigLabel << "\", shape=note];\n";
-            std::cout << "  n" << currentId << " -> n" << sigId << ";\n";
-        }
+        if (stmt->expr) printExprDot(stmt->expr.get(), nodeId, currentId);
         return;
+    }
+    else if (auto* lib = dynamic_cast<LibDecl*>(node)) {
+        label = "Library: " + lib->name;
+    }
+    else if (auto* use = dynamic_cast<UseDecl*>(node)) {
+        label = "Use: " + use->name;
     }
 
-    // Default Printing for simple nodes
     std::cout << "  n" << currentId << " [label=\"" << label << "\", fillcolor=\"" << color << "\", style=filled];\n";
     if (parentId != -1) std::cout << "  n" << parentId << " -> n" << currentId << ";\n";
 }
-
 // Wrapper to initialize the DOT format
 void printASTDotWrapper(ASTNode* root) {
     std::cout << "digraph AST {\n";
