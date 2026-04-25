@@ -1,6 +1,6 @@
 # vhdl-compiler
 
-Minimal ANTLRv4 + C++ compiler project structure using CMake.
+Minimal ANTLRv4 + C++ compiler project structure using bash.
 
 ## Prerequisites
 
@@ -39,7 +39,7 @@ Ab der AST-Aufgabe (02b) wurden die Aufgaben in C++ umgesetzt. Alle vorherigen A
 Der Wechsel erforderte eine intensive Einarbeitung in:
 - Den ANTLR4 C++ Runtime-API (generierter Code vs. selbst geschriebener Code)
 - Das C++ Memory-Management mit std::unique_ptr für die Baumstruktur
-- Den strukturellen Ablauf: welche Klassen ANTLR generiert, welche manuell implementiert werden müssen
+- Den strukturellen Ablauf den ANTLR zum korrekten Funktionieren vorgibt.
 
 ### 3. Grundlegendes Konzept des AST
 #### 3.1 AST vs. Parse-Tree
@@ -51,14 +51,14 @@ Die Bezeichnung „Baum“ wird der tatsächlichen Struktur nur bedingt gerecht.
 
 #### 3.2 Multiplizität als zentrales Entwurfskriterium
 Der größte strukturelle Unterschied zwischen den AST-Klassen liegt in ihrer Multiplizität, also der Anzahl der Kindknoten einer Kategorie:
-- Genau ein Kindknoten: std::unique_ptr<ChildType>, z. B. Entity enthält genau ein Port-Objekt
-- Mehrere Kindknoten gleichen Typs: std::vector<std::unique_ptr<ChildType>>, z. B. Architecture enthält mehrere Statements
+- Genau ein Kindknoten: std::unique_ptr<ChildType>, z.B. Entity enthält genau ein Port-Objekt
+- Mehrere Kindknoten gleichen Typs: std::vector<std::unique_ptr<ChildType>>, z.B. Architecture enthält mehrere Statements
 
 ### 4. Implementierung
 #### 4.1 Listener-/Walker-Pattern
 Zum Aufbau des AST wurde das Listener-/Walker-Pattern von ANTLR4 verwendet. Der ParseTreeWalker traversiert den Parse-Tree und ruft für jeden Knoten zwei Callbacks auf:
-- enterX Pre-Order: wird beim Betreten eines Knotens aufgerufen (links nach rechts).
-- exitX Post-Order: wird beim Verlassen eines Knotens aufgerufen, wenn alle Kinder bereits verarbeitet sind (rechts nach links).
+- enterX Pre-Order: wird beim Betreten eines Knotens aufgerufen (links nach rechts)
+- exitX Post-Order: wird beim Verlassen eines Knotens aufgerufen, wenn alle Kinder bereits verarbeitet sind (rechts nach links)
 
 #### 4.2 Push-Attach und Build-Attach
 Zum Zusammenbauen des AST wurden zwei Methodiken eingesetzt:
@@ -72,7 +72,7 @@ Das Prinzip: Jedes exitX der Ausdrucks-Ebene legt sein Ergebnis auf den expr_sta
 
 Die Reihenfolge der Operanden auf dem Stack ist umgekehrt (LIFO). Bei mehrelementigen Operatoren (AND, OR) müssen die Operanden nach dem Einsammeln umgekehrt werden (std::reverse), um die ursprüngliche Quellcode-Reihenfolge zu erhalten.
 
-### 5. AST-Klassenstruktur (Überblick)
+### 5. AST-Klassenstruktur
 - StartRule — Wurzelknoten: enthält Libs, Uses, Entities, Architectures
 - LibDecl, UseDecl — Bibliotheks- und Use-Deklarationen
 - Entity — Entitätsdeklaration mit optionalem Port
