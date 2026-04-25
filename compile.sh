@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# --- Bear Integration ---
+if [[ "${BEAR_ACTIVE:-0}" == "0" ]]; then
+    export BEAR_ACTIVE=1
+    echo ">> Running with bear to update compile_commands.json..."
+    exec bear -- "$0" "$@"
+fi
+
+ANTLR4_VERSION="4.13.1"
+
 ANTLR4_VERSION="4.13.1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/build"
