@@ -72,6 +72,7 @@ echo ">> Compiling vhdl_lexer..."
     g++ -std=c++17 -O2 \
     -o "${OUT}" \
     "${SCRIPT_DIR}/src/main.cpp" \
+    "${SCRIPT_DIR}/src/ASTBuilder.cpp" \
     "${GENERATED_LEXER}" \
     "${GENERATED_PARSER}" \
     -I"${GENERATED_DIR}" \

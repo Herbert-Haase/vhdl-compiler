@@ -11,6 +11,7 @@
 class ASTBuilder : public VHDLParserBaseListener {
 public:
   std::unique_ptr<ASTNode> root;
+  std::stack<std::unique_ptr<ExprNode>> expr_stack;
 
   // private:
   std::stack<ASTNode *> stack;
@@ -39,5 +40,12 @@ public:
 
   void exitSignal_obj(VHDLParser::Signal_objContext *) override;
 
+  // Statement
   void exitStatement(VHDLParser::StatementContext *) override;
+
+  // Expression
+  void exitPrimary(VHDLParser::PrimaryContext *) override;
+  void exitNotExpr(VHDLParser::NotExprContext *) override;
+  void exitAndExpr(VHDLParser::AndExprContext *) override;
+  void exitOrExpr(VHDLParser::OrExprContext *) override;
 };

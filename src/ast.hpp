@@ -1,8 +1,30 @@
 // ast.hpp
 
+#pragma once
+
 #include <memory>
 #include <string>
 #include <vector>
+
+struct ExprNode {
+  virtual ~ExprNode() = default;
+};
+
+struct IdExpr : ExprNode {
+  std::string name;
+};
+
+struct NotExpr : ExprNode {
+  std::unique_ptr<ExprNode> operand;
+};
+
+struct AndExpr : ExprNode {
+  std::vector<std::unique_ptr<ExprNode>> operands;
+};
+
+struct OrExpr : ExprNode {
+  std::vector<std::unique_ptr<ExprNode>> operands;
+};
 
 struct ASTNode {
   virtual ~ASTNode() = default;
@@ -18,13 +40,13 @@ struct UseDecl : ASTNode {
 };
 
 struct PortDecl : ASTNode {
-  std::string name;
+  std::vector<std::string> names;
   std::string type;
   bool in;
 };
 
 struct Port : ASTNode {
-  std::vector<PortDecl> signals;
+  std::vector<std::unique_ptr<PortDecl>> signals;
 };
 
 struct Entity : ASTNode {
@@ -33,11 +55,13 @@ struct Entity : ASTNode {
 };
 
 struct Signal : ASTNode {
-  std::string name;
+  std::vector<std::string> names;
   std::string type;
 };
 
 struct Statement : ASTNode {
+  std::string varName;
+  std::unique_ptr<ExprNode> expr;
 };
 
 struct Arch : ASTNode {
@@ -53,4 +77,3 @@ struct StartRule : ASTNode {
   std::vector<std::unique_ptr<Entity>> entities;
   std::vector<std::unique_ptr<Arch>> arches;
 };
-
