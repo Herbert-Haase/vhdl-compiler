@@ -21,7 +21,7 @@ ANTLR4_JAR_URL="https://repo1.maven.org/maven2/org/antlr/antlr4/${ANTLR4_VERSION
 GRAMMAR_FILE="${SCRIPT_DIR}/grammar/VHDLLexer.g4"
 PARSER_GRAMMAR_FILE="${SCRIPT_DIR}/grammar/VHDLParser.g4"
 RUNTIME_LIB="${RUNTIME_DIR}/lib/libantlr4-runtime.a"
-OUT="${BUILD_DIR}/vhdl_parser"
+OUT="${BUILD_DIR}/vhdl_compiler"
 GENERATED_LEXER="${GENERATED_DIR}/VHDLLexer.cpp"
 GENERATED_PARSER="${GENERATED_DIR}/VHDLParser.cpp"
 
@@ -77,16 +77,28 @@ if [[ ! -f "${GENERATED_LEXER}" || ! -f "${GENERATED_PARSER}" \
 fi
 
 # Compile
-echo ">> Compiling vhdl_lexer..."
-    g++ -std=c++17 -O2 \
-    -o "${OUT}" \
-    "${SCRIPT_DIR}/src/main.cpp" \
-    "${SCRIPT_DIR}/src/ASTBuilder.cpp" \
-    "${GENERATED_LEXER}" \
-    "${GENERATED_PARSER}" \
-    -I"${GENERATED_DIR}" \
-    -I"${RUNTIME_INCLUDE}" \
+compile_obj() {
+    local src="$1" obj="$2"
+    if [[ ! -f "${obj}" || "${src}" -nt "${obj}" ]]; then
+        echo ">> Compiling $(basename ${src})..."
+        g++ -std=c++17 -O0 -g -c "${src}" -o "${obj}" \
+            -I"${GENERATED_DIR}" \
+            -I"${RUNTIME_INCLUDE}" \
+            -I"${SCRIPT_DIR}/src"
+    fi
+}
+
+compile_obj "${SCRIPT_DIR}/src/main.cpp"         "${BUILD_DIR}/main.o"
+compile_obj "${SCRIPT_DIR}/src/ASTBuilder.cpp"   "${BUILD_DIR}/ASTBuilder.o"
+compile_obj "${SCRIPT_DIR}/src/SemanticChecker.cpp" "${BUILD_DIR}/SemanticChecker.o"
+compile_obj "${SCRIPT_DIR}/src/Interpreter.cpp"  "${BUILD_DIR}/Interpreter.o"
+compile_obj "${GENERATED_LEXER}"                 "${BUILD_DIR}/VHDLLexer.o"
+compile_obj "${GENERATED_PARSER}"                "${BUILD_DIR}/VHDLParser.o"
+
+echo ">> Linking..."
+g++ -std=c++17 -O0 -g \
+    "${BUILD_DIR}"/*.o \
     "${RUNTIME_DIR}/lib/libantlr4-runtime.a" \
-    || die "Compilation failed"
+    -o "${OUT}"
 
 echo ">> Built: ${OUT}"
