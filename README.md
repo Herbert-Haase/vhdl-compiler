@@ -30,6 +30,13 @@ eq = 1
 p0 = 1
 p1 = 0
 
+# Run for the ast
+```bash
+./build/vhdl_parser ./tests/fixtures/hello_word.vhd > tree.dot
+dot -Tsvg tree.dot -o tree.svg
+brave tree.svg
+```
+### Example output
 ![parser-tree](./tree.svg)
 
 
