@@ -30,6 +30,7 @@ eq = 1
 p0 = 1
 p1 = 0
 
+![parser-tree](./tree.svg)
 
 
 # Protokoll
