@@ -21,63 +21,71 @@ Minimal ANTLRv4 + C++ compiler project structure using bash.
 ## Run
 
 ```bash
-./build/vhdl_parser ./tests/fixtures/hello_word.vhd > tree.dot
-dot -Tsvg tree.dot -o tree.svg
-brave tree.svg
+./build/vhdl_compiler ./tests/fixtures/hello_word.vhd p0=1 p1=0 i0=0 i1=0
 ```
 
 ## Example output
-![parser-tree](./tree.svg)
+Output:
+eq = 1
+p0 = 1
+p1 = 0
+
 
 
 # Protokoll
-Die Aufgabe bestand darin, aus dem zuvor erstellten Parse-Tree einen Abstract Syntax Tree (AST) aufzubauen. Der AST soll nur semantisch relevante Informationen des VHDL-Quellcodes enthalten und als Grundlage für spätere Compiler-Phasen dienen.
+Diese Aufgabe umfasste die Implementierung der statischen Semantikprüfung sowie eines Interpreters für das VHDL-Subset. Im Vergleich zur vorherigen Aufgabe (AST-Aufbau) war der Einstieg deutlich einfacher, da der AST bereits als vollständig typisierte Klassenstruktur vorlag. Beide Phasen: Semantikprüfer und Interpreter, traversieren lediglich diesen bestehenden AST, ohne erneut mit ANTLR oder dem Parse-Tree interagieren zu müssen.
 
-### 2. Sprachwechsel zu C++
-Ab der AST-Aufgabe (02b) wurden die Aufgaben in C++ umgesetzt. Alle vorherigen Aufgaben (Lexer, Parser, Parse-Tree-Visualisierung) wurden entsprechend auf C++ portiert.
+### 3b Statische Semantik
+#### Regeln
+Es wurden zwei semantische Regeln implementiert:
 
-Der Wechsel erforderte eine intensive Einarbeitung in:
-- Den ANTLR4 C++ Runtime-API (generierter Code vs. selbst geschriebener Code)
-- Das C++ Memory-Management mit std::unique_ptr für die Baumstruktur
-- Den strukturellen Ablauf den ANTLR zum korrekten Funktionieren vorgibt.
+- Regel 1: Architecture referenziert eine bekannte Entity: Jede Architecture benennt im Kopf eine Entity. Es wird geprüft, ob eine Entity mit diesem Namen im AST existiert. Ist das nicht der Fall, handelt es sich um einen semantischen Fehler.
+- Regel 2: Nur definierte Variablen verwenden: In jedem Statement wird die linke Seite (Ziel der Zuweisung) sowie alle Variablen im Ausdruck (rechte Seite) gegen den gültigen Scope geprüft. Der Scope besteht aus den Signalen der Architecture und den Port-Signalen der zugehörigen Entity.
 
-### 3. Grundlegendes Konzept des AST
-#### 3.1 AST vs. Parse-Tree
-Die Bezeichnung „Baum“ wird der tatsächlichen Struktur nur bedingt gerecht. Im Unterschied zu den bisher bekannten Binärbäumen handelt es sich beim AST um eine tiefe Verschachtelung von Klasseninstanzen mit folgenden Eigenschaften:
-- Nicht eine einzige Klasse für alle Knoten, sondern annähernd so viele Klassen wie es verschiedene Knotentypen gibt
-- Jede Klasse repräsentiert genau eine grammatikalische Konstruktion der Sprache (Entity, Architecture, Signal, Statement, ...)
-- Non-Terminale ohne semantischen Eigenwert (z. B. Wrapper-Regeln wie start, units, libs) erhalten keine eigene AST-Klasse
-- Terminal-Tokens ohne inhaltliche Bedeutung (z. B. das Schlüsselwort LIBRARY als String) werden nicht als Member gespeichert
+#### Architektur des SemanticChecker
+Der SemanticChecker ist eine eigenständige Klasse, die den fertigen AST als Eingabe erhält. Er hält intern eine Liste von Fehlermeldungen:
+std::vector<std::string> errors;
 
-#### 3.2 Multiplizität als zentrales Entwurfskriterium
-Der größte strukturelle Unterschied zwischen den AST-Klassen liegt in ihrer Multiplizität, also der Anzahl der Kindknoten einer Kategorie:
-- Genau ein Kindknoten: std::unique_ptr<ChildType>, z.B. Entity enthält genau ein Port-Objekt
-- Mehrere Kindknoten gleichen Typs: std::vector<std::unique_ptr<ChildType>>, z.B. Architecture enthält mehrere Statements
+Die öffentliche Schnittstelle besteht aus einer einzigen Methode:
+bool check(const StartRule& root);
 
-### 4. Implementierung
-#### 4.1 Listener-/Walker-Pattern
-Zum Aufbau des AST wurde das Listener-/Walker-Pattern von ANTLR4 verwendet. Der ParseTreeWalker traversiert den Parse-Tree und ruft für jeden Knoten zwei Callbacks auf:
-- enterX Pre-Order: wird beim Betreten eines Knotens aufgerufen (links nach rechts)
-- exitX Post-Order: wird beim Verlassen eines Knotens aufgerufen, wenn alle Kinder bereits verarbeitet sind (rechts nach links)
+Sie gibt true zurück wenn keine Fehler gefunden wurden, sonst false. Intern gliedert sich die Prüfung in zwei private Methoden:
+- checkArchitectureEntities(root) prüft Regel 1
+- checkArchitectureSignals(arch, entity*) prüft Regel 2 für eine konkrete Architecture
 
-#### 4.2 Push-Attach und Build-Attach
-Zum Zusammenbauen des AST wurden zwei Methodiken eingesetzt:
-- Push-Attach (Stack-basiert): Knoten, die auf die Fertigstellung von Kindknoten warten müssen, werden beim Enter auf einen Stack gelegt. Beim Exit werden sie vom Stack geholt, finalisiert und an den neuen Stack-Top angehängt. Beispiel: Entity wartet auf das Port-Objekt.
-- Build-Attach (kontextbasiert): Blätter oder einfache Knoten, deren Daten vollständig aus dem ctx-Objekt ausgelesen werden können, werden direkt im exitX aufgebaut und sofort an den aktuellen Stack-Top angehängt, ohne selbst auf den Stack zu kommen. Beispiel: LibDecl, Signal.
+#### Ablauf
+1. Alle Entity-Namen werden in ein std::unordered_set eingetragen.
+2. Für jede Architecture wird geprüft ob arch.entity im Set vorhanden ist (Regel 1).
+3. Der Scope für Regel 2 wird aufgebaut: Signal-Namen der Architecture + Port-Namen der zugehörigen Entity.
+4. Für jedes Statement wird die linke Seite und der Ausdruck gegen den Scope geprüft.
+5. Ausdrücke werden rekursiv traversiert, dieselbe ExprNode-Hierarchie wie beim Interpreter, und jeder IdExpr-Knoten wird gegen den Scope validiert.
+6. Alle gefundenen Fehler werden gesammelt und nach dem vollständigen Durchlauf auf stderr ausgegeben.
 
-#### 4.3 Separater Stack für Expressions
-Die Ausdrucks-Grammatik (expression, orExpr, andExpr, notExpr, primary) ist rekursiv definiert. Da dieselbe Stack-Logik hier zu Konflikten mit dem Haupt-Stack geführt hätte, wurde ein eigener expr_stack vom Typ std::stack<std::unique_ptr<ExprNode>> eingesetzt.
+### 3b. Dynamische Semantik — Interpreter
+#### Konzept
+Da das VHDL-Subset ausschließlich kombinatorische Logik beschreibt (AND, OR, NOT auf booleschen Signalen, keine Schleifen, kein State), eignet sich ein Interpreter deutlich besser als ein Compiler. Der Interpreter traversiert den AST direkt und wertet ihn mit konkreten Eingabewerten aus, ohne Zwischencode zu erzeugen. Dieses Vorgehen entspricht dem Prinzip echter VHDL-Simulatoren.
 
-Das Prinzip: Jedes exitX der Ausdrucks-Ebene legt sein Ergebnis auf den expr_stack. Passthrough-Regeln (z. B. orExpr ohne OR-Token) tun nichts, dader Kindknoten bereits oben liegt. Nur exitStatement entnimmt das fertige Ausdrucksobjekt vom expr_stack und hängt es an das Statement-Objekt.
+#### Architektur der Interpreter-Klasse
+Der Interpreter hält eine einzige interne Datenstruktur, die Umgebung (env):
+std::unordered_map<std::string, bool> env;
 
-Die Reihenfolge der Operanden auf dem Stack ist umgekehrt (LIFO). Bei mehrelementigen Operatoren (AND, OR) müssen die Operanden nach dem Einsammeln umgekehrt werden (std::reverse), um die ursprüngliche Quellcode-Reihenfolge zu erhalten.
+Sie bildet Variablennamen auf boolesche Werte ab und dient als zentraler Zustand während der Auswertung. Die öffentliche Schnittstelle besteht aus zwei Methoden:
+    • filloutArgs(argc, argv) liest die Port-Belegungen von der Kommandozeile ein und befüllt env
+    • output(root) wertet alle Statements aus und gibt die Ergebnisse aus
 
-### 5. AST-Klassenstruktur
-- StartRule — Wurzelknoten: enthält Libs, Uses, Entities, Architectures
-- LibDecl, UseDecl — Bibliotheks- und Use-Deklarationen
-- Entity — Entitätsdeklaration mit optionalem Port
-- Port, PortDecl — Port-Objekt und einzelne Port-Signale (IN/OUT)
-- Arch — Architektur mit Signalen und Statements
-- Signal — interne Signaldeklaration
-- Statement — Zuweisung mit Zielname und Ausdrucksbaum
-- ExprNode-Hierarchie: IdExpr, NotExpr, AndExpr, OrExpr
+Die private Methode evalExpr(node) übernimmt die rekursive Auswertung der Ausdruckshierarchie.
+
+#### Ablauf
+1. filloutArgs parst Argumente der Form a=1 oder b=0 ab argv[2]. Der String wird bei '=' aufgeteilt, der Wert zu bool konvertiert und unter dem Namen in env eingetragen. Ungültige Werte oder fehlende '=' werden als Fehler zurückgegeben.
+
+2. output iteriert über alle Architectures und deren Statements. Für jedes Statement wird evalExpr auf dem Ausdrucksbaum aufgerufen.
+
+3. evalExpr wertet den ExprNode-Baum rekursiv aus:
+    • IdExpr → env.at(name) — Nachschlagen des Wertes in der Umgebung
+    • NotExpr → !evalExpr(operand)
+    • AndExpr → Short-circuit AND über alle Operanden
+    • OrExpr → Short-circuit OR über alle Operanden
+
+4. Das Ergebnis jedes Statements wird zusammen mit dem Zielnamen auf stdout ausgegeben:
+y = 1
+
