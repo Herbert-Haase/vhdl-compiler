@@ -21,7 +21,7 @@ ANTLR4_JAR_URL="https://repo1.maven.org/maven2/org/antlr/antlr4/${ANTLR4_VERSION
 GRAMMAR_FILE="${SCRIPT_DIR}/grammar/VHDLLexer.g4"
 PARSER_GRAMMAR_FILE="${SCRIPT_DIR}/grammar/VHDLParser.g4"
 RUNTIME_LIB="${RUNTIME_DIR}/lib/libantlr4-runtime.a"
-OUT="${BUILD_DIR}/vhdl_compiler"
+OUT="${BUILD_DIR}/vhdl_interpreter"
 GENERATED_LEXER="${GENERATED_DIR}/VHDLLexer.cpp"
 GENERATED_PARSER="${GENERATED_DIR}/VHDLParser.cpp"
 
