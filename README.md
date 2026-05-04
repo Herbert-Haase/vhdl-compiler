@@ -1,6 +1,6 @@
 # vhdl-compiler
 
-Minimal ANTLRv4 + C++ compiler project structure using bash.
+Minimal ANTLRv4 + C++ interpreter project structure using bash.
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ Minimal ANTLRv4 + C++ compiler project structure using bash.
 ## Run
 
 ```bash
-./build/vhdl_compiler ./tests/fixtures/hello_word.vhd p0=1 p1=0 i0=0 i1=0
+./build/vhdl_interpreter ./tests/fixtures/hello_word.vhd p0=1 p1=0 i0=0 i1=0
 ```
 
 ## Example output
