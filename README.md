@@ -78,8 +78,8 @@ Der Interpreter hält eine einzige interne Datenstruktur, die Umgebung (env):
 std::unordered_map<std::string, bool> env;
 
 Sie bildet Variablennamen auf boolesche Werte ab und dient als zentraler Zustand während der Auswertung. Die öffentliche Schnittstelle besteht aus zwei Methoden:
-    • filloutArgs(argc, argv) liest die Port-Belegungen von der Kommandozeile ein und befüllt env
-    • output(root) wertet alle Statements aus und gibt die Ergebnisse aus
+- filloutArgs(argc, argv) liest die Port-Belegungen von der Kommandozeile ein und befüllt env
+- output(root) wertet alle Statements aus und gibt die Ergebnisse aus
 
 Die private Methode evalExpr(node) übernimmt die rekursive Auswertung der Ausdruckshierarchie.
 
@@ -89,11 +89,11 @@ Die private Methode evalExpr(node) übernimmt die rekursive Auswertung der Ausdr
 2. output iteriert über alle Architectures und deren Statements. Für jedes Statement wird evalExpr auf dem Ausdrucksbaum aufgerufen.
 
 3. evalExpr wertet den ExprNode-Baum rekursiv aus:
-    • IdExpr → env.at(name) — Nachschlagen des Wertes in der Umgebung
-    • NotExpr → !evalExpr(operand)
-    • AndExpr → Short-circuit AND über alle Operanden
-    • OrExpr → Short-circuit OR über alle Operanden
+- IdExpr → env.at(name) — Nachschlagen des Wertes in der Umgebung
+- NotExpr → !evalExpr(operand)
+- AndExpr → Short-circuit AND über alle Operanden
+- OrExpr → Short-circuit OR über alle Operanden
 
-4. Das Ergebnis jedes Statements wird zusammen mit dem Zielnamen auf stdout ausgegeben:
+6. Das Ergebnis jedes Statements wird zusammen mit dem Zielnamen auf stdout ausgegeben:
 y = 1
 
