@@ -35,7 +35,7 @@ p1 = 0
 # Protokoll
 Diese Aufgabe umfasste die Implementierung der statischen Semantikprüfung sowie eines Interpreters für das VHDL-Subset. Im Vergleich zur vorherigen Aufgabe (AST-Aufbau) war der Einstieg deutlich einfacher, da der AST bereits als vollständig typisierte Klassenstruktur vorlag. Beide Phasen: Semantikprüfer und Interpreter, traversieren lediglich diesen bestehenden AST, ohne erneut mit ANTLR oder dem Parse-Tree interagieren zu müssen.
 
-### 3b Statische Semantik
+### 3a Statische Semantik
 #### Regeln
 Es wurden zwei semantische Regeln implementiert:
 
