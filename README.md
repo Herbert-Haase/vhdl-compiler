@@ -1,6 +1,6 @@
-# vhdl-compiler
+# vhdl-lexer
 
-Minimal ANTLRv4 + C++ compiler project structure using CMake.
+Minimal ANTLRv4 Lexer for VHDL
 
 ## Prerequisites
 
